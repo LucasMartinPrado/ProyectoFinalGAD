@@ -36,13 +36,16 @@ def obtenerVectorImagen(rutaImagen):
     vec = img2vec.get_vec(resizeImagen(img))
     return vec
 
+#Selecciona el segundo elemento del array para usar como criterio de ordenamiento
 def usarDistancia(elem):
     return elem[1]
 
+#Muestra cierta cantidad de elementos de una lista
 def mostrarPorSimilitud(lista, cantidad):
     listaAMostrar = lista[:cantidad]
     return listaAMostrar
 
+#Agrega una imagen a la BD
 def agregarImagen():
     conn = conectarAPostgres()
     cursor = conn.cursor()
@@ -53,7 +56,7 @@ def agregarImagen():
     cursor.execute('INSERT INTO prueba (ruta,vector) VALUES (%s,%s);', [rutaImg, vec.tolist()])
     conn.commit()
 
-
+#Realiza la consulta usando la tabla FQA
 def consultaFQA(vectorEntrada, radio):
     conn = conectarAPostgres()
     cursor = conn.cursor()

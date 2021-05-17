@@ -44,9 +44,7 @@ def busquedaSimilitud():
         displayImg(imagen[0], columna)
         columna += 1
 
-
-
-    print(listaSimil)
+    print(listaSimil) #Muestra por consola los resultados con ruta y distancia
 
 
 
@@ -75,8 +73,6 @@ buttonMethod = tkinter.Button(root, text="Buscar similares", padx=10, pady=10, b
 buttonMethod.grid(row=5, column=0)
 label2 = tkinter.Label(root, text="Resultados de la busqueda")
 label2.grid(row=6, column=0)
-
-
 
 
 root.mainloop()
