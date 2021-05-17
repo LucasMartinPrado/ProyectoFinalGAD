@@ -98,11 +98,3 @@ def consultaFQA(vectorEntrada, radio):
     cursor.close()
     conn.close()
     return lista
-
-print('Inicio')
-ruta = 'C:/GAD/TPFinal/train/Alexandrite/alexandrite_7.jpg'
-imagen = Image.open(ruta)
-v = obtenerVectorImagen(ruta)
-lista = consultaFQA(v, 3)
-print(mostrarPorSimilitud(lista, 10))
-
