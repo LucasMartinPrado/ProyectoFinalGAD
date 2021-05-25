@@ -3,7 +3,10 @@ from tkinter import filedialog
 from metodos import *
 from PIL import Image, ImageTk
 
-
+#Variables Globales
+rutaImagenBuscada = 'C:/GAD/TPFinal/train/Alexandrite/alexandrite_7.jpg' #Cargamos esta imagen como preview
+imagenPreview = Image.open(rutaImagenBuscada)
+photos = [] #Vector de imagenes
 
 #####Metodos#####
 
@@ -11,31 +14,37 @@ from PIL import Image, ImageTk
 def obtenerImagen():
     global imagenBuscada
     global rutaImagenBuscada
+    global rutaImagenBuscada_label
+
     rutaImagenBuscada = filedialog.askopenfilename(initialdir="C:/GAD/TPFinal/test", title="Seleccionar imagen", filetypes=(("JPEG (*.jpg; *.jpeg)", "*.jpg .jpeg"), ("PNG (*.png)", "*.png"), ("All files", "*.*")))
     image = Image.open(rutaImagenBuscada)
     imagenBuscada = ImageTk.PhotoImage(image.resize((100, 100), Image.ANTIALIAS))
-    imagenBuscada_label = tkinter.Label(image=imagenBuscada)
-    rutaImagenBuscada_label = tkinter.Label(text=rutaImagenBuscada.split("/")[-1])
-    imagenBuscada_label.grid(row=3, column=2)
-    rutaImagenBuscada_label.grid(row=4, column=2)
+    rutaImagenBuscada_label.grid_forget()
+    imagenBuscada_label = tkinter.Label(frameBusqueda, image=imagenBuscada)
+    rutaImagenBuscada_label = tkinter.Label(frameBusqueda, text=rutaImagenBuscada.split("/")[-1])
+    imagenBuscada_label.grid(row=0, column=0)
+    rutaImagenBuscada_label.grid(row=1, column=0)
 
 #Muestra una imagen en pantalla a partir de una ruta.
 def displayImg(ruta, columna):
     image = Image.open(ruta)
-    photo = ImageTk.PhotoImage(image.resize((100,100), Image.ANTIALIAS))
+    photo = ImageTk.PhotoImage(image.resize((100, 100), Image.ANTIALIAS))
     photos.append(photo)
     name = ruta.split("/")[-1]
-    newPhoto_label = tkinter.Label(image=photo)
-    newPhoto_label.grid(row=7+2*(columna//5), column=columna%5)
-    path_label = tkinter.Label(text=name)
-    path_label.grid(row=8+2*(columna//5), column=columna%5)
+    newPhoto_label = tkinter.Label(frameResultados, image=photo)
+    newPhoto_label.grid(row=2*(columna//5), column=columna%5)
+    path_label = tkinter.Label(frameResultados, text=name)
+    path_label.grid(row=1+2*(columna//5), column=columna%5)
 
 
 #Hace la busqueda por similitud y muestra los resultados.
 def busquedaSimilitud():
     global rutaImagenBuscada
+    global canvasResultados
+    global frameResultados
+    frameResultados = tkinter.LabelFrame(canvasResultados)
+    canvasResultados.create_window((0, 0), window=frameResultados, anchor=tkinter.NW)
     ruta = rutaImagenBuscada
-    imagen = Image.open(ruta)
     v = obtenerVectorImagen(ruta)
     lista = consultaFQA(v, 3)
     listaSimil = (mostrarPorSimilitud(lista, 10))
@@ -44,35 +53,68 @@ def busquedaSimilitud():
         displayImg(imagen[0], columna)
         columna += 1
 
+    #Actualizamos el canvas para que pueda usarse la scrollbar
+    frameResultados.update_idletasks()
+    canvasResultados.configure(scrollregion=canvasResultados.bbox(tkinter.ALL))
     print(listaSimil) #Muestra por consola los resultados con ruta y distancia
 
 
-
-##Pantallas
+###################
+#Pantallas
 
 #Pantalla principal
 root = tkinter.Tk()
 root.title('Proyecto Final GAD')
 root.geometry("800x600")
+root.resizable(False, False)
+bg = ImageTk.PhotoImage(file="assets/background.jpg")
+bg_label = tkinter.Label(root, image=bg)
+bg_label.place(x=0, y=0)
 
-#Variables Globales
-rutaImagenBuscada = ''
-imagenBuscada = 0
-photos = [] #Vector de imagenes
+
+#Frames
+#Frame de Imagen de Busqueda
+frameBusqueda = tkinter.LabelFrame(root, text= "Imagen a buscar", padx=5, pady=5)
+frameBusqueda.place(x=50, y=50)
+#Generamos la vista previa
+imagenBuscada = ImageTk.PhotoImage(imagenPreview.resize((100, 100), Image.ANTIALIAS))
+imagenBuscada_label = tkinter.Label(frameBusqueda, image=imagenBuscada)
+rutaImagenBuscada_label = tkinter.Label(frameBusqueda, text=rutaImagenBuscada.split("/")[-1])
+rutaImagenBuscada_label.grid(row=1, column=0)
+
+
+#Frame de resultados de busqueda
+#Frame contenedor
+frameBuscados = tkinter.LabelFrame(root, text= "Resultados de la busqueda", padx=5, pady=5)
+frameBuscados.place(x=50, y=250)
+#Canvas
+canvasResultados = tkinter.Canvas(frameBuscados, width=650)
+canvasResultados.grid(row=0, column=0)
+#Scrollbar
+scrollbarResultados = tkinter.Scrollbar(frameBuscados, orient=tkinter.VERTICAL, command=canvasResultados.yview)
+scrollbarResultados.grid(row=0, column=1, sticky=tkinter.NS)
+canvasResultados.configure(yscrollcommand=scrollbarResultados.set)
+#Frame con los resultados
+frameResultados = tkinter.LabelFrame(canvasResultados)
+#Ventana
+canvasResultados.create_window((0, 0), window=frameResultados, anchor=tkinter.NW)
+frameResultados.update_idletasks()
+canvasResultados.configure(scrollregion=canvasResultados.bbox(tkinter.ALL))
+
+
 
 #Nombre del Proyecto
-label1 = tkinter.Label(root, text="Proyecto Final GAD")
-label1.grid(row=0,column=0)
 #Boton obtener imagen
 buttonMethod = tkinter.Button(root, text="Obtener imagen", padx=10, pady=10, bg="orange", command=obtenerImagen)
-buttonMethod.grid(row=1, column=0)
+buttonMethod.place(x=200, y=100)
 #Preview imagen buscada
+imagenBuscada_label.grid(row=0, column=0)
 
 #Boton busqueda
 buttonMethod = tkinter.Button(root, text="Buscar similares", padx=10, pady=10, bg="orange", command=busquedaSimilitud)
-buttonMethod.grid(row=5, column=0)
-label2 = tkinter.Label(root, text="Resultados de la busqueda")
-label2.grid(row=6, column=0)
+buttonMethod.place(x=350, y=100)
+
+
 
 
 root.mainloop()
