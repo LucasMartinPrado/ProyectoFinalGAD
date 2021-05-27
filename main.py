@@ -5,8 +5,9 @@ from PIL import Image, ImageTk
 
 #Variables Globales
 rutaImagenBuscada = 'C:/GAD/TPFinal/train/Alexandrite/alexandrite_7.jpg' #Cargamos esta imagen como preview
-imagenPreview = Image.open(rutaImagenBuscada)
+imagenPreview = Image.open(rutaImagenBuscada) #Abrimos la imagen preview
 photos = [] #Vector de imagenes
+cantidadAMostrar = 10 #Mostramos 10 valores por defecto
 
 #####Metodos#####
 
@@ -16,7 +17,9 @@ def obtenerImagen():
     global rutaImagenBuscada
     global rutaImagenBuscada_label
 
-    rutaImagenBuscada = filedialog.askopenfilename(initialdir="C:/GAD/TPFinal/test", title="Seleccionar imagen", filetypes=(("JPEG (*.jpg; *.jpeg)", "*.jpg .jpeg"), ("PNG (*.png)", "*.png"), ("All files", "*.*")))
+    rutaNueva = filedialog.askopenfilename(initialdir="C:/GAD/TPFinal/test", title="Seleccionar imagen", filetypes=(("JPEG (*.jpg; *.jpeg)", "*.jpg .jpeg"), ("PNG (*.png)", "*.png"), ("All files", "*.*")))
+    if rutaNueva != '':
+        rutaImagenBuscada = rutaNueva
     image = Image.open(rutaImagenBuscada)
     imagenBuscada = ImageTk.PhotoImage(image.resize((100, 100), Image.ANTIALIAS))
     rutaImagenBuscada_label.grid_forget()
@@ -42,12 +45,24 @@ def busquedaSimilitud():
     global rutaImagenBuscada
     global canvasResultados
     global frameResultados
+    global cantidadAMostrar
+
+    #Actualizamos el valor de cantidadAMostrar
+    if int(entryCantidad.get()) <= 5:
+       cantidadAMostrar = 5
+    else:
+       cantidadAMostrar = int(entryCantidad.get())
+
+    #Actualizamos la pantalla
+    frameResultados.destroy()
     frameResultados = tkinter.LabelFrame(canvasResultados)
     canvasResultados.create_window((0, 0), window=frameResultados, anchor=tkinter.NW)
+
+    #Realizamos la busqueda
     ruta = rutaImagenBuscada
     v = obtenerVectorImagen(ruta)
     lista = consultaFQA(v, 3)
-    listaSimil = (mostrarPorSimilitud(lista, 10))
+    listaSimil = (mostrarPorSimilitud(lista, cantidadAMostrar))
     columna = 0
     for imagen in listaSimil:
         displayImg(imagen[0], columna)
@@ -102,8 +117,6 @@ frameResultados.update_idletasks()
 canvasResultados.configure(scrollregion=canvasResultados.bbox(tkinter.ALL))
 
 
-
-#Nombre del Proyecto
 #Boton obtener imagen
 buttonMethod = tkinter.Button(root, text="Obtener imagen", padx=10, pady=10, bg="orange", command=obtenerImagen)
 buttonMethod.place(x=200, y=100)
@@ -113,6 +126,13 @@ imagenBuscada_label.grid(row=0, column=0)
 #Boton busqueda
 buttonMethod = tkinter.Button(root, text="Buscar similares", padx=10, pady=10, bg="orange", command=busquedaSimilitud)
 buttonMethod.place(x=350, y=100)
+
+#Input cantidad a mostrar
+entryFrame = tkinter.LabelFrame(root, text='Cantidad a mostrar', padx=5, pady=5)
+entryFrame.place(x=340, y=150)
+entryCantidad = tkinter.Entry(entryFrame, width=20, borderwidth=1)
+entryCantidad.pack()
+entryCantidad.insert(0, cantidadAMostrar)
 
 
 
