@@ -2,13 +2,14 @@
 
 _Este proyecto final consiste en una herramienta que mediante la utilización de un árbol FQA se pueda realizar una búsqueda por similitud de piedras preciosas.
 
-## Comenzando 🚀
+### Comenzando 🚀
 
 _Estas instrucciones te permitirán obtener una copia del proyecto en funcionamiento en tu máquina local para propósitos de desarrollo y pruebas._
 
-## ¿Cómo funciona la herramienta? 😯
+### ¿Cómo funciona la herramienta? 😯
 
 _ FQA _
+
 
 ### Pre-requisitos 📋
 
