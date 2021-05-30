@@ -1,6 +1,6 @@
 # Proyecto Final GAD
 
-_Este proyecto final consiste en una herramienta que mediante la utilización de un árbol FQA se pueda realizar una búsqueda por similitud de piedras preciosas.
+Este proyecto final consiste en una herramienta que mediante la utilización de un árbol FQA se pueda realizar una búsqueda por similitud de piedras preciosas.
 
 ### Comenzando 🚀
 
@@ -43,7 +43,7 @@ _Además, en el archivo: _ [main.py](https://github.com/LucasMartinPrado/Proyect
 rutaNueva = filedialog.askopenfilename(initialdir="C:\Users\Fernando\Desktop\ProyectoFinalGAD-master\assets\images\test", title="Seleccionar imagen", filetypes=(("JPEG (*.jpg; *.jpeg)", "*.jpg .jpeg"), ("PNG (*.png)", "*.png"), ("All files", "*.*")))
 ```
 
-_Finalmente, para que funcione la imágen de preview, en el archivo: _ [metodos.py](https://github.com/LucasMartinPrado/ProyectoFinalGAD/blob/master/metodos.py) _ debemos especificar la ruta de una imágen en la función "agregarImagen()", en nuestro caso es _
+_Finalmente, para que funcione la imágen de preview, en el archivo: [metodos.py](https://github.com/LucasMartinPrado/ProyectoFinalGAD/blob/master/metodos.py) debemos especificar la ruta de una imágen en la función "agregarImagen()", en nuestro caso es _
 ```
 rutaImg = 'C:\Users\Fernando\Desktop\ProyectoFinalGAD-master\assets\images\train\Alexandrite\alexandrite_7.jpg'
 ```
