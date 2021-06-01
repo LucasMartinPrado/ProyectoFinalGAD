@@ -4,6 +4,7 @@ from PIL import Image
 import numpy as np
 import os
 
+#Esta es la ruta de la raiz donde esta el dataset
 raiz = 'C:/GAD/TPFinal/train'
 
 
@@ -12,7 +13,7 @@ def conectarAPostgres():
     conn = psycopg2.connect(
         host="localhost",
         port=5433,
-        database="pruebaPython",
+        database="proyectoGAD",
         user="postgres",
         password="password")
     return conn
@@ -37,7 +38,7 @@ def agregarImagen(rutaImg):
     img2vec = Img2Vec(cuda=False)
     img = Image.open(rutaImg)
     vec = img2vec.get_vec(resizeImagen(img))
-    cursor.execute('INSERT INTO prueba (ruta,vector) VALUES (%s,%s);', [rutaImg, vec.tolist()])
+    cursor.execute('INSERT INTO imagenes (ruta,vector) VALUES (%s,%s);', [rutaImg, vec.tolist()])
     conn.commit()
 
 #Metodo para contar la cantidad de imagenes en un arbol de directorios
@@ -51,7 +52,6 @@ def recorrerCarpetas(path):
             if archivo.endswith('.png') or archivo.endswith('.jpg') or archivo.endswith('.jpeg'):
                 rutaImagen = f'{subpath}/{archivo}'
                 contador = contador + 1
-                print(rutaImagen)
     print(f'Se encontraron {contador} imagenes')
 
 
@@ -70,7 +70,7 @@ def generarDB(path):
                 rutaImagen = f'{subpath}/{archivo}'
             img = Image.open(rutaImagen)
             vec = img2vec.get_vec(resizeImagen(img))
-            cursor.execute('INSERT INTO prueba (ruta,vector) VALUES (%s,%s);', [rutaImagen, vec.tolist()])
+            cursor.execute('INSERT INTO imagenes (ruta,vector) VALUES (%s,%s);', [rutaImagen, vec.tolist()])
         conn.commit()
 
     cursor.close()
@@ -100,10 +100,10 @@ def seleccionIncremental(k, n, a):
     img2vec = Img2Vec(cuda=False)
     listaPivotes = [] #Aun no tenemos ninguno
     # Seleccionando pares
-    cursor.execute('SELECT prueba1.ruta, prueba1.vector, prueba2.ruta, prueba2.vector'
-                   ' FROM prueba prueba1, prueba prueba2 '
-                   'WHERE prueba1.ruta not in (SELECT ruta FROM pivotes) AND'
-                   ' prueba2.ruta not in (SELECT ruta FROM pivotes) '
+    cursor.execute('SELECT imagenes1.ruta, imagenes1.vector, imagenes2.ruta, imagenes2.vector'
+                   ' FROM imagenes imagenes1, imagenes imagenes2 '
+                   'WHERE imagenes1.ruta not in (SELECT ruta FROM pivotes) AND'
+                   ' imagenes2.ruta not in (SELECT ruta FROM pivotes) '
                    'ORDER BY random() LIMIT %s', (a,))
     pares = cursor.fetchall()
 
@@ -116,10 +116,10 @@ def seleccionIncremental(k, n, a):
     for x in range(k):
         maximo = 0
 
-        cursor.execute('SELECT prueba.ruta, prueba.vector'
-                       ' FROM prueba'
-                       ' WHERE prueba.ruta NOT IN (SELECT ruta FROM pivotes) AND'
-                       ' prueba.ruta NOT IN %s'
+        cursor.execute('SELECT imagenes.ruta, imagenes.vector'
+                       ' FROM imagenes'
+                       ' WHERE imagenes.ruta NOT IN (SELECT ruta FROM pivotes) AND'
+                       ' imagenes.ruta NOT IN %s'
                        ' ORDER BY random() LIMIT %s', (tuple(paresruta), n,))
         pivotescandidatos = cursor.fetchall()
         cursor.execute('SELECT ruta, vector FROM pivotes')
@@ -144,7 +144,7 @@ def generarFirmasFQA():
     cursor = conn.cursor()
 
     #Obtenemos los elementos de la base de datos
-    cursor.execute('SELECT ruta, vector FROM prueba')
+    cursor.execute('SELECT ruta, vector FROM imagenes')
     elementos = cursor.fetchall()
 
     #Obtenemos los pivotes

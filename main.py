@@ -48,7 +48,7 @@ def busquedaSimilitud():
     global cantidadAMostrar
 
     #Actualizamos el valor de cantidadAMostrar
-    if int(entryCantidad.get()) <= 5:
+    if int(entryCantidad.get()) <= 0:
        cantidadAMostrar = 5
     else:
        cantidadAMostrar = int(entryCantidad.get())

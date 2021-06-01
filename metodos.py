@@ -10,7 +10,7 @@ def conectarAPostgres():
     conn = psycopg2.connect(
         host="localhost",
         port=5433,
-        database="pruebaPython",
+        database="proyectoGAD",
         user="postgres",
         password="password")
     return conn
@@ -53,7 +53,7 @@ def agregarImagen():
     rutaImg = 'C:/GAD/TPFinal/train/Alexandrite/alexandrite_7.jpg'
     img = Image.open(rutaImg)
     vec = img2vec.get_vec(resizeImagen(img))
-    cursor.execute('INSERT INTO prueba (ruta,vector) VALUES (%s,%s);', [rutaImg, vec.tolist()])
+    cursor.execute('INSERT INTO imagenes (ruta,vector) VALUES (%s,%s);', [rutaImg, vec.tolist()])
     conn.commit()
 
 #Realiza la consulta usando la tabla FQA
@@ -86,7 +86,7 @@ def consultaFQA(vectorEntrada, radio):
     resultados = cursor.fetchall()
 
     #Obtenemos los vectores que pasaron el filtro
-    cursor.execute('SELECT * FROM prueba WHERE ruta IN %s', (tuple(resultados),))
+    cursor.execute('SELECT * FROM imagenes WHERE ruta IN %s', (tuple(resultados),))
     listado = cursor.fetchall()
 
     #Armamos la lista de rutas y distancias
