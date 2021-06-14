@@ -34,6 +34,7 @@ def obtenerVectorImagen(rutaImagen):
     img2vec = Img2Vec(cuda=False)
     img = Image.open(rutaImagen)
     vec = img2vec.get_vec(resizeImagen(img))
+    vec = np.around(vec, 4)
     return vec
 
 #Selecciona el segundo elemento del array para usar como criterio de ordenamiento
@@ -47,57 +48,71 @@ def mostrarPorSimilitud(lista, cantidad):
 
 #Agrega una imagen a la BD
 def agregarImagen():
-    conn = conectarAPostgres()
-    cursor = conn.cursor()
-    img2vec = Img2Vec(cuda=False)
-    rutaImg = 'C:/GAD/TPFinal/train/Alexandrite/alexandrite_7.jpg'
-    img = Image.open(rutaImg)
-    vec = img2vec.get_vec(resizeImagen(img))
-    cursor.execute('INSERT INTO imagenes (ruta,vector) VALUES (%s,%s);', [rutaImg, vec.tolist()])
-    conn.commit()
+    conn = None
+    try:
+        conn = conectarAPostgres()
+        cursor = conn.cursor()
+        rutaImg = 'C:/GAD/TPFinal/train/Alexandrite/alexandrite_7.jpg'
+        vec = obtenerVectorImagen(rutaImg)
+        cursor.execute('INSERT INTO imagenes (ruta,vector) VALUES (%s,%s);', [rutaImg, vec.tolist()])
+        conn.commit()
+        cursor.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        print(error)
+    finally:
+        if conn is not None:
+            conn.close()
 
 #Realiza la consulta usando la tabla FQA
 def consultaFQA(vectorEntrada, radio):
-    conn = conectarAPostgres()
-    cursor = conn.cursor()
-    distanciasEntrada = []
-    #Obtenemos los pivotes
-    cursor.execute('SELECT vector FROM pivotes')
-    listaPivotes = cursor.fetchall()
-    #Obtenemos el vector de firmas de la imagen de entrada
-    for pivote in listaPivotes:
-        distanciasEntrada.append(np.linalg.norm(vectorEntrada - np.array(pivote)))
+    conn = None
+    try:
+        conn = conectarAPostgres()
+        cursor = conn.cursor()
+        distanciasEntrada = []
+        #Obtenemos los pivotes
+        cursor.execute('SELECT vector FROM pivotes')
+        listaPivotes = cursor.fetchall()
+        #Obtenemos el vector de firmas de la imagen de entrada
+        for pivote in listaPivotes:
+            distanciasEntrada.append(np.linalg.norm(vectorEntrada - np.array(pivote)))
 
-    #Filtramos aquellos elementos que no se encuentren en el radio de busqueda
-    cursor.execute('SELECT ruta FROM "firmasFQA" '
-                     'WHERE "distanciaPivote1" BETWEEN %(d1)s - %(radio)s AND %(d1)s + %(radio)s '
-                     'AND "distanciaPivote2" BETWEEN %(d2)s - %(radio)s AND %(d2)s + %(radio)s '
-                     'AND "distanciaPivote3" BETWEEN %(d3)s - %(radio)s AND %(d3)s + %(radio)s '
-                     'AND "distanciaPivote4" BETWEEN %(d4)s - %(radio)s AND %(d4)s + %(radio)s '
-                     'AND "distanciaPivote5" BETWEEN %(d5)s - %(radio)s AND %(d5)s + %(radio)s '
-                     'AND "distanciaPivote6" BETWEEN %(d6)s - %(radio)s AND %(d6)s + %(radio)s  '
-                     'AND "distanciaPivote7" BETWEEN %(d7)s - %(radio)s AND %(d7)s + %(radio)s '
-                     'AND "distanciaPivote8" BETWEEN %(d8)s - %(radio)s AND %(d8)s + %(radio)s  '
-                     'AND "distanciaPivote9" BETWEEN %(d9)s - %(radio)s AND %(d9)s + %(radio)s '
-                     'AND "distanciaPivote10" BETWEEN %(d10)s - %(radio)s AND %(d10)s + %(radio)s',
-                     {"radio": radio, "d1": distanciasEntrada[0], "d2": distanciasEntrada[1], "d3": distanciasEntrada[2],
-                      "d4": distanciasEntrada[3], "d5": distanciasEntrada[4], "d6": distanciasEntrada[5],
-                      "d7": distanciasEntrada[6], "d8": distanciasEntrada[7], "d9": distanciasEntrada[8], "d10": distanciasEntrada[9]})
-    resultados = cursor.fetchall()
+        #Filtramos aquellos elementos que no se encuentren en el radio de busqueda
+        cursor.execute('SELECT ruta FROM "firmasFQA" '
+                         'WHERE "distanciaPivote1" BETWEEN %(d1)s - %(radio)s AND %(d1)s + %(radio)s '
+                         'AND "distanciaPivote2" BETWEEN %(d2)s - %(radio)s AND %(d2)s + %(radio)s '
+                         'AND "distanciaPivote3" BETWEEN %(d3)s - %(radio)s AND %(d3)s + %(radio)s '
+                         'AND "distanciaPivote4" BETWEEN %(d4)s - %(radio)s AND %(d4)s + %(radio)s '
+                         'AND "distanciaPivote5" BETWEEN %(d5)s - %(radio)s AND %(d5)s + %(radio)s '
+                         'AND "distanciaPivote6" BETWEEN %(d6)s - %(radio)s AND %(d6)s + %(radio)s  '
+                         'AND "distanciaPivote7" BETWEEN %(d7)s - %(radio)s AND %(d7)s + %(radio)s '
+                         'AND "distanciaPivote8" BETWEEN %(d8)s - %(radio)s AND %(d8)s + %(radio)s  '
+                         'AND "distanciaPivote9" BETWEEN %(d9)s - %(radio)s AND %(d9)s + %(radio)s '
+                         'AND "distanciaPivote10" BETWEEN %(d10)s - %(radio)s AND %(d10)s + %(radio)s',
+                         {"radio": radio, "d1": distanciasEntrada[0], "d2": distanciasEntrada[1], "d3": distanciasEntrada[2],
+                          "d4": distanciasEntrada[3], "d5": distanciasEntrada[4], "d6": distanciasEntrada[5],
+                          "d7": distanciasEntrada[6], "d8": distanciasEntrada[7], "d9": distanciasEntrada[8], "d10": distanciasEntrada[9]})
+        resultados = cursor.fetchall()
 
-    #Obtenemos los vectores que pasaron el filtro
-    cursor.execute('SELECT * FROM imagenes WHERE ruta IN %s', (tuple(resultados),))
-    listado = cursor.fetchall()
+        #Obtenemos los vectores que pasaron el filtro
+        cursor.execute('SELECT * FROM imagenes WHERE ruta IN %s', (tuple(resultados),))
+        listado = cursor.fetchall()
 
-    #Armamos la lista de rutas y distancias
-    lista = []
-    for row in listado:
-        distancia = (np.linalg.norm(vectorEntrada - np.array(row[2])))
-        lista.append((row[1], distancia))
+        #Armamos la lista de rutas y distancias
+        lista = []
+        for row in listado:
+            distancia = (np.linalg.norm(vectorEntrada - np.array(row[2])))
+            #Verificamos que el elemento este dentro del radio de consulta
+            if distancia < radio:
+             lista.append((row[1], distancia))
 
-    #Ordenamos la lista por distancia
-    lista.sort(key=usarDistancia)
+        #Ordenamos la lista por distancia
+        lista.sort(key=usarDistancia)
 
-    cursor.close()
-    conn.close()
-    return lista
+        cursor.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        print(error)
+    finally:
+        if conn is not None:
+            conn.close()
+            return lista

@@ -8,6 +8,7 @@ rutaImagenBuscada = 'C:/GAD/TPFinal/train/Alexandrite/alexandrite_7.jpg' #Cargam
 imagenPreview = Image.open(rutaImagenBuscada) #Abrimos la imagen preview
 photos = [] #Vector de imagenes
 cantidadAMostrar = 10 #Mostramos 10 valores por defecto
+radioBusqueda = 20    #Usamos un radio de 20 como valor por defecto
 
 #####Metodos#####
 
@@ -29,15 +30,17 @@ def obtenerImagen():
     rutaImagenBuscada_label.grid(row=1, column=0)
 
 #Muestra una imagen en pantalla a partir de una ruta.
-def displayImg(ruta, columna):
+def displayImg(ruta, distancia, columna):
     image = Image.open(ruta)
     photo = ImageTk.PhotoImage(image.resize((100, 100), Image.ANTIALIAS))
     photos.append(photo)
     name = ruta.split("/")[-1]
     newPhoto_label = tkinter.Label(frameResultados, image=photo)
-    newPhoto_label.grid(row=2*(columna//5), column=columna%5)
+    newPhoto_label.grid(row=3*(columna//5), column=columna%5)
     path_label = tkinter.Label(frameResultados, text=name)
-    path_label.grid(row=1+2*(columna//5), column=columna%5)
+    path_label.grid(row=1+3*(columna//5), column=columna%5)
+    distancia_label = tkinter.Label(frameResultados, text='Distancia: ' + str(np.round(distancia, 4)))
+    distancia_label.grid(row=2+3*(columna//5), column=columna%5)
 
 
 #Hace la busqueda por similitud y muestra los resultados.
@@ -46,6 +49,13 @@ def busquedaSimilitud():
     global canvasResultados
     global frameResultados
     global cantidadAMostrar
+    global radioBusqueda
+
+    #Actualizamos el valor de radioBusqueda
+    if int(entryCantidad.get()) <= 0:
+        radioBusqueda = 0
+    else:
+        radioBusqueda = int(entryRadio.get())
 
     #Actualizamos el valor de cantidadAMostrar
     if int(entryCantidad.get()) <= 0:
@@ -61,11 +71,11 @@ def busquedaSimilitud():
     #Realizamos la busqueda
     ruta = rutaImagenBuscada
     v = obtenerVectorImagen(ruta)
-    lista = consultaFQA(v, 3)
+    lista = consultaFQA(v, radioBusqueda)
     listaSimil = (mostrarPorSimilitud(lista, cantidadAMostrar))
     columna = 0
     for imagen in listaSimil:
-        displayImg(imagen[0], columna)
+        displayImg(imagen[0], imagen[1], columna)
         columna += 1
 
     #Actualizamos el canvas para que pueda usarse la scrollbar
@@ -127,12 +137,21 @@ imagenBuscada_label.grid(row=0, column=0)
 buttonMethod = tkinter.Button(root, text="Buscar similares", padx=10, pady=10, bg="orange", command=busquedaSimilitud)
 buttonMethod.place(x=350, y=100)
 
+
+#Input radio de busqueda
+entryFrameR = tkinter.LabelFrame(root, text='Radio de busqueda', padx=5, pady=5)
+entryFrameR.place(x=190, y=150)
+entryRadio = tkinter.Entry(entryFrameR, width=20, borderwidth=1)
+entryRadio.pack()
+entryRadio.insert(0, radioBusqueda)
+
 #Input cantidad a mostrar
-entryFrame = tkinter.LabelFrame(root, text='Cantidad a mostrar', padx=5, pady=5)
-entryFrame.place(x=340, y=150)
-entryCantidad = tkinter.Entry(entryFrame, width=20, borderwidth=1)
+entryFrameC = tkinter.LabelFrame(root, text='Cantidad a mostrar', padx=5, pady=5)
+entryFrameC.place(x=340, y=150)
+entryCantidad = tkinter.Entry(entryFrameC, width=20, borderwidth=1)
 entryCantidad.pack()
 entryCantidad.insert(0, cantidadAMostrar)
+
 
 
 
