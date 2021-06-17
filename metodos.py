@@ -2,6 +2,10 @@ import psycopg2
 from img2vec_pytorch import Img2Vec
 from PIL import Image
 import numpy as np
+import skimage
+from skimage import io
+from skimage.transform import resize
+import matplotlib.pyplot as plt
 
 raiz = 'C:/GAD/TPFinal/train'
 
@@ -10,7 +14,7 @@ def conectarAPostgres():
     conn = psycopg2.connect(
         host="localhost",
         port=5433,
-        database="proyectoGAD",
+        database="proyectoGADPruebaN",
         user="postgres",
         password="password")
     return conn
@@ -28,6 +32,42 @@ def resizeImagen(imagen):
 
     return new_im
 
+#Normaliza el vector
+def normalizar(vector):
+    norm = np.linalg.norm(vector)
+    if norm == 0:
+        return vector
+    return vector / norm
+
+#Normaliza el vector de colores considerando 50000 como valor maximo
+#y aumentando el peso para la funcion ponderada de distancia en 5^2.
+def normalizarColores(vector):
+    return 5 * vector / 50000
+
+#Aplica la mascara a la imagen
+def maskTImagen(image):
+    #Parametros internos:
+    sigma = 2
+    #Lo pasamos a grises y difuminamos
+    blur = skimage.color.rgb2gray(image)
+    blur = skimage.filters.gaussian(blur, sigma=sigma)
+    #Verificamos el color predominante del fondo (Blanco o Negro)
+    fondoBlanco = False
+    histograma = plt.hist(image.ravel(), bins=4)
+    print(histograma)
+    if histograma[0][3] > histograma[0][1] or histograma[0][3] > histograma[0][1]:
+        fondoBlanco = True
+    #Usamos metodo de Otsu para determinar el valor limite
+    t = skimage.filters.threshold_otsu(blur)
+    if fondoBlanco:
+        mask = blur < t
+    else:
+        mask = blur > t
+    #Con la mask seleccionamos lo relevante y lo devolvemos
+    sel = np.zeros_like(image)
+    sel[mask] = image[mask]
+    return sel
+
 
 #Obtener el vector de una imagen a partir de una Ruta, por ejemplo: 'C:/GAD/TPFinal/train/Alexandrite/alexandrite_1.jpg'
 def obtenerVectorImagen(rutaImagen):
@@ -36,6 +76,26 @@ def obtenerVectorImagen(rutaImagen):
     vec = img2vec.get_vec(resizeImagen(img))
     vec = np.around(vec, 4)
     return vec
+
+def obtenerVectorImagenPrueba(rutaImagen):
+    #Obtenemos la primera parte del vector a partir de Img2Vec
+    img2vec = Img2Vec(cuda=False)
+    img = Image.open(rutaImagen)
+    vec = img2vec.get_vec(resizeImagen(img)) #Vector img2vec
+    #Obtenemos la segunda parte del vector, los colores separados en RGB
+    image = resize(io.imread(rutaImagen), (224, 224))
+    #Canal rojo
+    vecHistograma = plt.hist(image[:, :, 0].ravel(), bins=16)
+    r = normalizarColores(np.array(vecHistograma[0])) #Vector del canal rojo
+    #Canal verde
+    vecHistograma = plt.hist(image[:, :, 1].ravel(), bins=16)
+    g = normalizarColores(np.array(vecHistograma[0])) #Vector del canal verde
+    #Canal azul
+    vecHistograma = plt.hist(image[:, :, 2].ravel(), bins=16)
+    b = normalizarColores(np.array(vecHistograma[0])) #Vector del canal azul
+    #Concatenamos y devolvemos el resultado
+    vecResultante = np.around(np.concatenate((vec, r, g, b)), 4)
+    return vecResultante
 
 #Selecciona el segundo elemento del array para usar como criterio de ordenamiento
 def usarDistancia(elem):
@@ -64,12 +124,13 @@ def agregarImagen():
             conn.close()
 
 #Realiza la consulta usando la tabla FQA
-def consultaFQA(vectorEntrada, radio):
+def consultaFQA(ruta, radio):
     conn = None
     try:
         conn = conectarAPostgres()
         cursor = conn.cursor()
         distanciasEntrada = []
+        vectorEntrada = obtenerVectorImagenPrueba(ruta)
         #Obtenemos los pivotes
         cursor.execute('SELECT vector FROM pivotes')
         listaPivotes = cursor.fetchall()
