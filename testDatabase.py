@@ -3,25 +3,25 @@ from img2vec_pytorch import Img2Vec
 from PIL import Image
 import numpy as np
 import os, sys
+from metodos import *
+from skimage.transform import resize
+from skimage import io, data
+import matplotlib.pyplot as plt
+from skimage.viewer import ImageViewer
 
-raiz = 'C:/GAD/TPFinal/train'
 
+raiz = 'C:/GAD/TPFinal/test'
 
-def conectarAPostgres():
+#Metodo para acceder a la base de datos
+#Ligeramente modificado para realizar pruebas
+def conectarAPostgresPruebas(nombreDB):
     conn = psycopg2.connect(
         host="localhost",
         port=5433,
-        database="pruebaPython",
+        database=nombreDB,
         user="postgres",
         password="password")
     return conn
-
-
-def agregar():
-    conn = conectarAPostgres()
-    cursor = conn.cursor()
-    cursor.execute('INSERT INTO prueba (nombre,numero) VALUES (%s,%s);', ["Angel", 25])
-    conn.commit()
 
 
 def resizeImagen(imagen):
@@ -35,17 +35,6 @@ def resizeImagen(imagen):
     new_im.paste(imagen, ((final_size - new_image_size[0]) // 2, (final_size - new_image_size[1]) // 2))
 
     return new_im
-
-
-def usarImg():
-    print('Empezamos')
-    img2vec = Img2Vec(cuda=False)
-    print('img2Vec abierto')
-    img = Image.open('C:/GAD/TPFinal/train/Alexandrite/alexandrite_1.jpg')
-    print('imagen abierta')
-    vec = img2vec.get_vec(resizeImagen(img))
-    print(vec)
-
 
 def compararDistancia():
     img2vec = Img2Vec(cuda=False)
@@ -113,174 +102,166 @@ def recorrerCarpetas(path):
                 rutaImagen = f'{subpath}/{archivo}'
                 contador = contador + 1
                 print(rutaImagen)
+                print(rutaImagen.split("/")[-2])
     print(f'Se encontraron {contador} imagenes')
 
 
-def generarDB(path):
-    conn = conectarAPostgres()
-    cursor = conn.cursor()
-    img2vec = Img2Vec(cuda=False)
+#Realiza la consulta usando la tabla FQA
+#Similar al de metodos.py, pero ligeramente modificado para realizar pruebas
+def consultaFQAPruebas(nombreDB, ruta, radio):
+    conn = None
+    try:
+        conn = conectarAPostgresPruebas(nombreDB)
+        cursor = conn.cursor()
+        distanciasEntrada = []
+        vectorEntrada = obtenerVectorImagenPrueba(ruta)
+        #Obtenemos los pivotes
+        cursor.execute('SELECT vector FROM pivotes')
+        listaPivotes = cursor.fetchall()
+        #Obtenemos el vector de firmas de la imagen de entrada
+        for pivote in listaPivotes:
+            distanciasEntrada.append(np.linalg.norm(vectorEntrada - np.array(pivote)))
 
-    listaDirectorio = os.listdir(path)
+        #Filtramos aquellos elementos que no se encuentren en el radio de busqueda
+        cursor.execute('SELECT ruta FROM "firmasFQA" '
+                         'WHERE "distanciaPivote1" BETWEEN %(d1)s - %(radio)s AND %(d1)s + %(radio)s '
+                         'AND "distanciaPivote2" BETWEEN %(d2)s - %(radio)s AND %(d2)s + %(radio)s '
+                         'AND "distanciaPivote3" BETWEEN %(d3)s - %(radio)s AND %(d3)s + %(radio)s '
+                         'AND "distanciaPivote4" BETWEEN %(d4)s - %(radio)s AND %(d4)s + %(radio)s '
+                         'AND "distanciaPivote5" BETWEEN %(d5)s - %(radio)s AND %(d5)s + %(radio)s '
+                         'AND "distanciaPivote6" BETWEEN %(d6)s - %(radio)s AND %(d6)s + %(radio)s  '
+                         'AND "distanciaPivote7" BETWEEN %(d7)s - %(radio)s AND %(d7)s + %(radio)s '
+                         'AND "distanciaPivote8" BETWEEN %(d8)s - %(radio)s AND %(d8)s + %(radio)s  '
+                         'AND "distanciaPivote9" BETWEEN %(d9)s - %(radio)s AND %(d9)s + %(radio)s '
+                         'AND "distanciaPivote10" BETWEEN %(d10)s - %(radio)s AND %(d10)s + %(radio)s',
+                         {"radio": radio, "d1": distanciasEntrada[0], "d2": distanciasEntrada[1], "d3": distanciasEntrada[2],
+                          "d4": distanciasEntrada[3], "d5": distanciasEntrada[4], "d6": distanciasEntrada[5],
+                          "d7": distanciasEntrada[6], "d8": distanciasEntrada[7], "d9": distanciasEntrada[8], "d10": distanciasEntrada[9]})
+        resultados = cursor.fetchall()
+
+        #Obtenemos los vectores que pasaron el filtro
+        cursor.execute('SELECT * FROM imagenes WHERE ruta IN %s', (tuple(resultados),))
+        listado = cursor.fetchall()
+
+        #Armamos la lista de rutas y distancias
+        lista = []
+        for row in listado:
+            distancia = (np.linalg.norm(vectorEntrada - np.array(row[2])))
+            #Verificamos que el elemento este dentro del radio de consulta
+            if distancia < radio:
+             lista.append((row[1], distancia))
+
+        #Ordenamos la lista por distancia
+        lista.sort(key=usarDistancia)
+
+        cursor.close()
+    except (Exception, psycopg2.DatabaseError) as error:
+        print(error)
+    finally:
+        if conn is not None:
+            conn.close()
+            return lista
+
+
+
+def histogram():
+    image = resize(io.imread('C:/GAD/TPFinal/test/moonstone/moonstone_18.jpg'), (224, 224))
+    image = maskTImagen(image)
+    io.imshow(image)
+    plt.show()
+
+    _ = plt.hist(image.ravel(), bins=4, color='orange', )
+    _ = plt.hist(image[:, :, 0].ravel(), bins=16, color='red', alpha=0.5)
+    _ = plt.hist(image[:, :, 1].ravel(), bins=16, color='Green', alpha=0.5)
+    _ = plt.hist(image[:, :, 2].ravel(), bins=16, color='Blue', alpha=0.5)
+    _ = plt.xlabel('Intensity Value')
+    _ = plt.ylabel('Count')
+    _ = plt.legend(['Total', 'Red_Channel', 'Green_Channel', 'Blue_Channel'])
+    plt.show()
+    Output: Figure - 2
+
+    _ = plt.hist(image[:, :, 0].ravel(), bins=16)
+    _ = plt.xlabel('Intensity Value')
+    _ = plt.ylabel('Count')
+    plt.show()
+    Output: Figure - 3
+
+    _ = plt.hist(image[:, :, 1].ravel(), bins=16)
+    _ = plt.xlabel('Intensity Value')
+    _ = plt.ylabel('Count')
+    plt.show()
+    Output: Figure - 4
+
+    _ = plt.hist(image[:, :, 2].ravel(), bins=16)
+    _ = plt.xlabel('Intensity Value')
+    _ = plt.ylabel('Count')
+    plt.show()
+    Output: Figure - 5
+
+
+
+
+#Este metodo compara los resultados de las consultasFQA con lo esperado
+#Aciertos = [Tres primeros, Cinco primeros, Diez primeros]
+def pruebaTasaAcierto(nombreDB):
+    #Obtenemos el total de imagenes
+    totalImagenesPrueba = recorrerCarpetas(raiz)
+    aciertos = [0, 0, 0]
+
+    #Comenzamos a recorrer la carpeta de pruebas
+    contador = 0
+    listaDirectorio = os.listdir(raiz)
     for directorio in listaDirectorio:
-        subpath = f'{path}/{directorio}'
+        subpath = f'{raiz}/{directorio}'
         listaSubDirectorio = os.listdir(subpath)
         for archivo in listaSubDirectorio:
             if archivo.endswith('.png') or archivo.endswith('.jpg') or archivo.endswith('.jpeg'):
+                contador += 1
+                print(contador)
                 rutaImagen = f'{subpath}/{archivo}'
-            img = Image.open(rutaImagen)
-            vec = img2vec.get_vec(resizeImagen(img))
-            cursor.execute('INSERT INTO prueba (ruta,vector) VALUES (%s,%s);', [rutaImagen, vec.tolist()])
-            print('Archivo')
-        print('Directorio')
-        conn.commit()
-
-    cursor.close()
-    conn.close()
-
-#Calcular las distancias maximas para el par y el vectorPivote
-#Utilizado en la seleccion incremental
-def calcularDistanciaMaxima(vector1, vector2, vectorPivoteCandidato, listaPivotes):
-    maximo = 0
-    for pivotes in listaPivotes:
-        distancia1 = np.linalg.norm(np.array(vector1) - np.array(pivotes[1]))
-        distancia2 = np.linalg.norm(np.array(vector2) - np.array(pivotes[1]))
-        if maximo < abs(distancia1 - distancia2):
-            maximo = abs(distancia1 - distancia2)
-    distancia1 = np.linalg.norm(np.array(vector1) - np.array(vectorPivoteCandidato))
-    distancia2 = np.linalg.norm(np.array(vector2) - np.array(vectorPivoteCandidato))
-    if maximo < abs(distancia1 - distancia2):
-        maximo = abs(distancia1 - distancia2)
-    return maximo
-
-
-def seleccionIncremental(k, n, a):
-    conn = conectarAPostgres()
-    cursor = conn.cursor()
-    img2vec = Img2Vec(cuda=False)
-    listaPivotes = [] #Aun no tenemos ninguno
-    # Seleccionando pares
-    cursor.execute('SELECT prueba1.ruta, prueba1.vector, prueba2.ruta, prueba2.vector'
-                   ' FROM prueba prueba1, prueba prueba2 '
-                   'WHERE prueba1.ruta not in (SELECT ruta FROM pivotes) AND'
-                   ' prueba2.ruta not in (SELECT ruta FROM pivotes) '
-                   'ORDER BY random() LIMIT %s', (a,))      #Es importante dejar la coma en (a,) porque esta lo hace inmutable
-    pares = cursor.fetchall()
-
-    #Creamos las listas con la primer y segunda ruta de cada par
-    paresruta = []
-    for rowpares in pares:
-        paresruta.append(rowpares[0])
-        paresruta.append(rowpares[2])
+                resultadoEsperado = rutaImagen.split("/")[-2]
+                lista = mostrarPorSimilitud(consultaFQAPruebas(nombreDB, rutaImagen, 1000), 10)
+                #Recorremos los resultados
+                sinResultado = True
+                i = 0
+                while sinResultado and (i < len(lista)):
+                    resultadoObtenido = lista[i][0].split("/")[-2]
+                    if resultadoEsperado == resultadoObtenido:
+                    #Si esta entre los tres primeros
+                        if i < 3:
+                            aciertos[0] += 1
+                            aciertos[1] += 1
+                            aciertos[2] += 1
+                        else:
+                            #Si esta entre los cinco primeros
+                            if i < 5:
+                               aciertos[1] += 1
+                               aciertos[2] += 1
+                            else:
+                               #Esta entre los diez primeros
+                               aciertos[2] += 1
+                        #Tenemos resultado, por lo que actualizamos la condicion de salida
+                        sinResultado = False
+                    #Incrementamos el indice
+                    i += 1
+    return aciertos
 
 
-    for x in range(k):
-        maximo = 0
-
-        cursor.execute('SELECT prueba.ruta, prueba.vector'
-                       ' FROM prueba'
-                       ' WHERE prueba.ruta NOT IN (SELECT ruta FROM pivotes) AND'
-                       ' prueba.ruta NOT IN %s'
-                       ' ORDER BY random() LIMIT %s', (tuple(paresruta), n,))
-        pivotescandidatos = cursor.fetchall()
-        cursor.execute('SELECT ruta, vector FROM pivotes')
-        listaPivotes = cursor.fetchall()
-        for rowpivotes in pivotescandidatos:
-            sumatoria= 0
-            for row in pares:
-                sumatoria += calcularDistanciaMaxima(row[1], row[3], rowpivotes[1], listaPivotes)
-            if maximo < (sumatoria / a):
-              maximo = (sumatoria / a)
-              pivoteParaAgregar = (rowpivotes[0], rowpivotes[1])
-
-        cursor.execute('INSERT INTO pivotes (ruta,vector) VALUES (%s,%s);', [pivoteParaAgregar[0], pivoteParaAgregar[1]])
-        conn.commit()
-    cursor.close()
-    conn.close()
-
-def generarFirmasFQA():
-    conn = conectarAPostgres()
-    cursor = conn.cursor()
-
-    cursor.execute('SELECT ruta, vector FROM prueba')
-    elementos = cursor.fetchall()
-
-    cursor.execute('SELECT * FROM pivotes')
-    listaPivotes = cursor.fetchall()
-
-    for elemento in elementos:
-       distancias = []
-       for pivote in listaPivotes:
-           distancias.append(np.linalg.norm( np.array(elemento[1]) - np.array(pivote[2]) ) )
-
-       cursor.execute('INSERT INTO "firmasFQA"('
-	   'ruta, "distanciaPivote1", "distanciaPivote2", "distanciaPivote3",'
-       ' "distanciaPivote4", "distanciaPivote5", "distanciaPivote6", "distanciaPivote7",'
-       ' "distanciaPivote8", "distanciaPivote9", "distanciaPivote10")'
-	   'VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)', (elemento[0],distancias[0], distancias[1], distancias[2], distancias[3], distancias[4], distancias[5], distancias[6], distancias[7], distancias[8], distancias[9],   ))
-
-    conn.commit()
-
-    cursor.close()
-    conn.close()
 
 
-def consultaFQA(vectorEntrada, radio):
-    conn = conectarAPostgres()
-    cursor = conn.cursor()
-    distanciasEntrada = []
-    cursor.execute('SELECT vector FROM pivotes')
 
-    ####Prueba####
-    img2vec = Img2Vec(cuda=False)
-    rutaIMG = 'C:/GAD/TPFinal/test/Alexandrite/alexandrite_6.jpg'
-    imgEntrada = Image.open(rutaIMG)
-    print('Imagen de entrada: ' + rutaIMG)
-    vectorEntrada = img2vec.get_vec(resizeImagen(imgEntrada))
-    ####FinPrueba####
-    listaPivotes = cursor.fetchall()
-    for pivote in listaPivotes:
-        distanciasEntrada.append(np.linalg.norm(vectorEntrada - np.array(pivote)))
 
-    cursor.execute('SELECT ruta FROM "firmasFQA" '
-                     'WHERE "distanciaPivote1" BETWEEN %(d1)s - %(radio)s AND %(d1)s + %(radio)s '
-                     'AND "distanciaPivote2" BETWEEN %(d2)s - %(radio)s AND %(d2)s + %(radio)s '
-                     'AND "distanciaPivote3" BETWEEN %(d3)s - %(radio)s AND %(d3)s + %(radio)s '
-                     'AND "distanciaPivote4" BETWEEN %(d4)s - %(radio)s AND %(d4)s + %(radio)s '
-                     'AND "distanciaPivote5" BETWEEN %(d5)s - %(radio)s AND %(d5)s + %(radio)s '
-                     'AND "distanciaPivote6" BETWEEN %(d6)s - %(radio)s AND %(d6)s + %(radio)s  '
-                     'AND "distanciaPivote7" BETWEEN %(d7)s - %(radio)s AND %(d7)s + %(radio)s '
-                     'AND "distanciaPivote8" BETWEEN %(d8)s - %(radio)s AND %(d8)s + %(radio)s  '
-                     'AND "distanciaPivote9" BETWEEN %(d9)s - %(radio)s AND %(d9)s + %(radio)s '
-                     'AND "distanciaPivote10" BETWEEN %(d10)s - %(radio)s AND %(d10)s + %(radio)s',
-                     {"radio": radio, "d1": distanciasEntrada[0], "d2": distanciasEntrada[1], "d3": distanciasEntrada[2],
-                      "d4": distanciasEntrada[3], "d5": distanciasEntrada[4], "d6": distanciasEntrada[5],
-                      "d7": distanciasEntrada[6], "d8": distanciasEntrada[7], "d9": distanciasEntrada[8], "d10": distanciasEntrada[9]})
-    resultados = cursor.fetchall()
 
-    cursor.execute('SELECT * FROM prueba WHERE ruta IN %s', (tuple(resultados),))
-    listado = cursor.fetchall()
-    contador = 0
-    lista = []
-    for row in listado:
-        contador += 1
-        distancia = (np.linalg.norm(vectorEntrada - np.array(row[2])))
-        lista.append((row[1], distancia))
-    print('Mostrar los 10 mas parecidos')
-    lista.sort(key=usarDistancia)
-    print('Sorted: ', mostrarPorSimilitud(lista, 10))
 
-    print(contador)
-    cursor.close()
-    conn.close()
+
+
+
+
+
 
 print('Inicio')
-# recorrerCarpetas(raiz)
-# usarImg()
-# agregarImagen()
-# generarDB(raiz)
-#compararDistanciaDB()
-#seleccionIncremental(10, 30, 100)
-#generarFirmasFQA()
-consultaFQA(0, 3)
+#recorrerCarpetas(raiz)
+#consultaFQA(0, 3)
+histogram()
+#print(pruebaTasaAcierto("proyectoGADPruebaN"))
 

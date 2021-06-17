@@ -12,7 +12,7 @@ def conectarAPostgres():
     conn = psycopg2.connect(
         host="localhost",
         port=5433,
-        database="proyectoGAD",
+        database="proyectoGADPruebaN",
         user="postgres",
         password="password")
     return conn
@@ -98,8 +98,9 @@ def generarDB(path):
             for archivo in listaSubDirectorio:
                 if archivo.endswith('.png') or archivo.endswith('.jpg') or archivo.endswith('.jpeg'):
                     rutaImagen = f'{subpath}/{archivo}'
-                vec = obtenerVectorImagen(rutaImagen)
-                cursor.execute('INSERT INTO imagenes (ruta,vector) VALUES (%s,%s);', [rutaImagen, vec.tolist()])
+                    print(rutaImagen)
+                    vec = obtenerVectorImagenPrueba(rutaImagen)
+                    cursor.execute('INSERT INTO imagenes (ruta,vector) VALUES (%s,%s);', [rutaImagen, vec.tolist()])
             conn.commit()
         cursor.close()
     except (Exception, psycopg2.DatabaseError) as error:

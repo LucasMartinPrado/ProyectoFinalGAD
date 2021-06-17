@@ -70,8 +70,7 @@ def busquedaSimilitud():
 
     #Realizamos la busqueda
     ruta = rutaImagenBuscada
-    v = obtenerVectorImagen(ruta)
-    lista = consultaFQA(v, radioBusqueda)
+    lista = consultaFQA(ruta, radioBusqueda)
     listaSimil = (mostrarPorSimilitud(lista, cantidadAMostrar))
     columna = 0
     for imagen in listaSimil:
