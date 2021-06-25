@@ -8,7 +8,7 @@ rutaImagenBuscada = 'C:/GAD/TPFinal/train/Alexandrite/alexandrite_7.jpg' #Cargam
 imagenPreview = Image.open(rutaImagenBuscada) #Abrimos la imagen preview
 photos = [] #Vector de imagenes
 cantidadAMostrar = 10 #Mostramos 10 valores por defecto
-radioBusqueda = 20    #Usamos un radio de 20 como valor por defecto
+radioBusqueda = 30    #Usamos un radio de 20 como valor por defecto
 
 #####Metodos#####
 
@@ -70,6 +70,7 @@ def busquedaSimilitud():
 
     #Realizamos la busqueda
     ruta = rutaImagenBuscada
+    lista = []
     lista = consultaFQA(ruta, radioBusqueda)
     listaSimil = (mostrarPorSimilitud(lista, cantidadAMostrar))
     columna = 0
@@ -128,25 +129,25 @@ canvasResultados.configure(scrollregion=canvasResultados.bbox(tkinter.ALL))
 
 #Boton obtener imagen
 buttonMethod = tkinter.Button(root, text="Obtener imagen", padx=10, pady=10, bg="orange", command=obtenerImagen)
-buttonMethod.place(x=200, y=100)
+buttonMethod.place(x=250, y=100)
 #Preview imagen buscada
 imagenBuscada_label.grid(row=0, column=0)
 
 #Boton busqueda
 buttonMethod = tkinter.Button(root, text="Buscar similares", padx=10, pady=10, bg="orange", command=busquedaSimilitud)
-buttonMethod.place(x=350, y=100)
+buttonMethod.place(x=400, y=100)
 
 
 #Input radio de busqueda
 entryFrameR = tkinter.LabelFrame(root, text='Radio de busqueda', padx=5, pady=5)
-entryFrameR.place(x=190, y=150)
+entryFrameR.place(x=240, y=150)
 entryRadio = tkinter.Entry(entryFrameR, width=20, borderwidth=1)
 entryRadio.pack()
 entryRadio.insert(0, radioBusqueda)
 
 #Input cantidad a mostrar
 entryFrameC = tkinter.LabelFrame(root, text='Cantidad a mostrar', padx=5, pady=5)
-entryFrameC.place(x=340, y=150)
+entryFrameC.place(x=390, y=150)
 entryCantidad = tkinter.Entry(entryFrameC, width=20, borderwidth=1)
 entryCantidad.pack()
 entryCantidad.insert(0, cantidadAMostrar)

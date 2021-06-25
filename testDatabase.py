@@ -1,15 +1,11 @@
-import psycopg2
-from img2vec_pytorch import Img2Vec
-from PIL import Image
-import numpy as np
-import os, sys
+import os
 from metodos import *
 from skimage.transform import resize
-from skimage import io, data
+from skimage import io
 import matplotlib.pyplot as plt
-from skimage.viewer import ImageViewer
 
 
+#Raiz de la carpeta de testing
 raiz = 'C:/GAD/TPFinal/test'
 
 #Metodo para acceder a la base de datos
@@ -22,73 +18,6 @@ def conectarAPostgresPruebas(nombreDB):
         user="postgres",
         password="password")
     return conn
-
-
-def resizeImagen(imagen):
-    final_size = 224
-    size = imagen.size
-    ratio = float(final_size) / max(size)
-    new_image_size = tuple([int(x * ratio) for x in size])
-    imagen = imagen.resize(new_image_size, Image.ANTIALIAS)
-
-    new_im = Image.new("RGB", (final_size, final_size))
-    new_im.paste(imagen, ((final_size - new_image_size[0]) // 2, (final_size - new_image_size[1]) // 2))
-
-    return new_im
-
-def compararDistancia():
-    img2vec = Img2Vec(cuda=False)
-    img1 = Image.open('C:/GAD/TPFinal/train/Alexandrite/alexandrite_1.jpg')
-    vec1 = img2vec.get_vec(resizeImagen(img1)).tolist()
-    img2 = Image.open('C:/GAD/TPFinal/train/Alexandrite/alexandrite_8.jpg')
-    vec2 = img2vec.get_vec(resizeImagen(img2)).tolist()
-    print(np.linalg.norm(np.array(vec1) - np.array(vec2)))
-
-
-def compararDistanciaDB():
-    conn = conectarAPostgres()
-    cursor = conn.cursor()
-    print('Conexion establecida con Postgres')
-    img2vec = Img2Vec(cuda=False)
-    ruta = 'C:/GAD/TPFinal/test/Alexandrite/alexandrite_6.jpg'
-    imgEntrada = Image.open(ruta)
-    print('Imagen de entrada: ' + ruta)
-    vecE = img2vec.get_vec(resizeImagen(imgEntrada))
-    cursor.execute('SELECT * FROM prueba')
-    print('SELECT * FROM prueba')
-    resultados = cursor.fetchall()
-
-    print('Comparando...')
-    lista = []
-    for row in resultados:
-        distancia = (np.linalg.norm(vecE - np.array(row[2])))
-        lista.append((row[1], distancia))
-    print('Mostrar los 10 mas parecidos')
-    lista.sort(key=usarDistancia)
-    print('Sorted: ', mostrarPorSimilitud(lista, 10))
-
-    cursor.close()
-    conn.close()
-
-
-def usarDistancia(elem):
-    return elem[1]
-
-
-def mostrarPorSimilitud(lista, cantidad):
-    listaAMostrar = lista[:cantidad]
-    return listaAMostrar
-
-
-def agregarImagen():
-    conn = conectarAPostgres()
-    cursor = conn.cursor()
-    img2vec = Img2Vec(cuda=False)
-    rutaImg = 'C:/GAD/TPFinal/train/Alexandrite/alexandrite_7.jpg'
-    img = Image.open(rutaImg)
-    vec = img2vec.get_vec(resizeImagen(img))
-    cursor.execute('INSERT INTO prueba (ruta,vector) VALUES (%s,%s);', [rutaImg, vec.tolist()])
-    conn.commit()
 
 
 def recorrerCarpetas(path):
@@ -104,6 +33,7 @@ def recorrerCarpetas(path):
                 print(rutaImagen)
                 print(rutaImagen.split("/")[-2])
     print(f'Se encontraron {contador} imagenes')
+    return contador
 
 
 #Realiza la consulta usando la tabla FQA
@@ -114,7 +44,7 @@ def consultaFQAPruebas(nombreDB, ruta, radio):
         conn = conectarAPostgresPruebas(nombreDB)
         cursor = conn.cursor()
         distanciasEntrada = []
-        vectorEntrada = obtenerVectorImagenPrueba(ruta)
+        vectorEntrada = obtenerVectorImagen(ruta)
         #Obtenemos los pivotes
         cursor.execute('SELECT vector FROM pivotes')
         listaPivotes = cursor.fetchall()
@@ -163,9 +93,12 @@ def consultaFQAPruebas(nombreDB, ruta, radio):
             return lista
 
 
-
+#Muestra en pantalla la imagen, la imagen con la mascara aplicada
+#y los histogramas de colores: totales, canal rojo, canal verde, y canal azul.
 def histogram():
     image = resize(io.imread('C:/GAD/TPFinal/test/moonstone/moonstone_18.jpg'), (224, 224))
+    io.imshow(image)
+    plt.show()
     image = maskTImagen(image)
     io.imshow(image)
     plt.show()
@@ -178,25 +111,21 @@ def histogram():
     _ = plt.ylabel('Count')
     _ = plt.legend(['Total', 'Red_Channel', 'Green_Channel', 'Blue_Channel'])
     plt.show()
-    Output: Figure - 2
 
-    _ = plt.hist(image[:, :, 0].ravel(), bins=16)
+    _ = plt.hist(image[:, :, 0].ravel(), bins=32)
     _ = plt.xlabel('Intensity Value')
     _ = plt.ylabel('Count')
     plt.show()
-    Output: Figure - 3
 
-    _ = plt.hist(image[:, :, 1].ravel(), bins=16)
+    _ = plt.hist(image[:, :, 1].ravel(), bins=32)
     _ = plt.xlabel('Intensity Value')
     _ = plt.ylabel('Count')
     plt.show()
-    Output: Figure - 4
 
-    _ = plt.hist(image[:, :, 2].ravel(), bins=16)
+    _ = plt.hist(image[:, :, 2].ravel(), bins=32)
     _ = plt.xlabel('Intensity Value')
     _ = plt.ylabel('Count')
     plt.show()
-    Output: Figure - 5
 
 
 
@@ -217,10 +146,10 @@ def pruebaTasaAcierto(nombreDB):
         for archivo in listaSubDirectorio:
             if archivo.endswith('.png') or archivo.endswith('.jpg') or archivo.endswith('.jpeg'):
                 contador += 1
-                print(contador)
+                print('Imagen ' + str(contador) + ' de ' + str(totalImagenesPrueba))
                 rutaImagen = f'{subpath}/{archivo}'
                 resultadoEsperado = rutaImagen.split("/")[-2]
-                lista = mostrarPorSimilitud(consultaFQAPruebas(nombreDB, rutaImagen, 1000), 10)
+                lista = mostrarPorSimilitud(consultaFQAPruebas(nombreDB, rutaImagen, 1000000), 10)
                 #Recorremos los resultados
                 sinResultado = True
                 i = 0
@@ -244,7 +173,7 @@ def pruebaTasaAcierto(nombreDB):
                         sinResultado = False
                     #Incrementamos el indice
                     i += 1
-    return aciertos
+    return (aciertos)
 
 
 
@@ -262,6 +191,6 @@ def pruebaTasaAcierto(nombreDB):
 print('Inicio')
 #recorrerCarpetas(raiz)
 #consultaFQA(0, 3)
-histogram()
-#print(pruebaTasaAcierto("proyectoGADPruebaN"))
+#histogram()
+print(pruebaTasaAcierto("proyectoGAD"))
 

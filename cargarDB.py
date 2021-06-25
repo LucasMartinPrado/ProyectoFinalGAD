@@ -12,7 +12,7 @@ def conectarAPostgres():
     conn = psycopg2.connect(
         host="localhost",
         port=5433,
-        database="proyectoGADPruebaN",
+        database="proyectoGAD",
         user="postgres",
         password="password")
     return conn
@@ -99,7 +99,7 @@ def generarDB(path):
                 if archivo.endswith('.png') or archivo.endswith('.jpg') or archivo.endswith('.jpeg'):
                     rutaImagen = f'{subpath}/{archivo}'
                     print(rutaImagen)
-                    vec = obtenerVectorImagenPrueba(rutaImagen)
+                    vec = obtenerVectorImagen(rutaImagen)
                     cursor.execute('INSERT INTO imagenes (ruta,vector) VALUES (%s,%s);', [rutaImagen, vec.tolist()])
             conn.commit()
         cursor.close()
@@ -213,7 +213,7 @@ def generarFirmasFQA():
 #Cargado de la base de datos
 print('Iniciando...')
 print('Cargando imagenes')
-generarDB(raiz)
+#generarDB(raiz)
 print('Seleccion Incremental')
 seleccionIncremental(10, 30, 100)
 print('Generando firmas FQA')
