@@ -20,6 +20,16 @@ Luego, con los no descartados, se forma una lista de candidatos que se comparan 
 
 Entonces, cada vez que se realiza una consulta, utilizamos la tabla FQA, un vector de entrada y el radio, se obtiene el vector de firmas de la imagen de entrada, luego se filtran los elementos que no se encuentran en el radio de búsqueda y obtenemos aquellos vectores que hayan pasado el filtro, por ultimo comparamos estos vectores con el de entrada para verificar si está dentro del radio, mostrando por pantalla las imágenes gracias a las rutas incluídas en el resultado.
 
+
+### ¿Y que tan bien funciona? 😲
+Para medir la eficiencia de la herramienta a la hora de correr el código, se decidió utilizar histogramas de colores.
+Los histogramas nos permite obtener los colores RGB para luego normalizarlos. Al hacer esto, nos habíamos encontrado con la particularidad de que los histogramas también estaban tomando los fondos de las imágenes de las piedras preciosas, por lo que se procedió a crear una función de "masking" que se le aplica a estas imágenes, detectando los bordes correspondientes para luego hacer que se ignore la parte enmascarada de la imágen. 
+Para hacer todo esto, utilizamos la librería Skimage. Al detectar los bordes, tuvimos que aplicar un valor "threshold" (de límite) dinámico usando método de Otsu. El valor límite se estableció como dinámico debido a unos factores a tener en cuenta:
+	- Los fondos, por lo general, no son iguales. Hay fondos blancos, negros y hasta incluso grises.
+	- Las gemas también tienen variedad de colores, si se coloca un threshold muy alto, se podría 
+      enmascarar partes de la gema.
+De esta forma, siendo dinámico, ya no tendríamos estos problemas. Finalmente obtuvimos resultados muy buenos respecto a la predicción.
+
 ### Pre-requisitos 📋
 
 Que cosas se necesitan para hacer correr la herramienta
@@ -46,18 +56,18 @@ def conectarAPostgres():
     return conn
 ```
 
-Insertamos el dataset nuestro en la ubicación que nosotros queramos, en nuestro caso es "C:\Users\Fernando\Desktop\ProyectoFinalGAD-master\assets\images"
+Insertamos el dataset nuestro en la ubicación que nosotros queramos <ubicación-proyecto> ("C:\Users\...\ProyectoFinalGAD-master\assets\images")
 
 Además, en el archivo: [main.py](https://github.com/LucasMartinPrado/ProyectoFinalGAD/blob/master/main.py) precisamente en la funcion "ObtenerImagen()" también tenemos que cambiar la ruta de "initialdir" con la ruta correspondiente al dataset de test
 
 ```
-rutaNueva = filedialog.askopenfilename(initialdir="C:\Users\Fernando\Desktop\ProyectoFinalGAD-master\assets\images\test", title="Seleccionar imagen", filetypes=(("JPEG (*.jpg; *.jpeg)", "*.jpg .jpeg"), ("PNG (*.png)", "*.png"), ("All files", "*.*")))
+rutaNueva = filedialog.askopenfilename(initialdir="<ubicación-proyecto>", title="Seleccionar imagen", filetypes=(("JPEG (*.jpg; *.jpeg)", "*.jpg .jpeg"), ("PNG (*.png)", "*.png"), ("All files", "*.*")))
 ```
 
 Finalmente, para que funcione la imágen de preview, en el archivo: [metodos.py](https://github.com/LucasMartinPrado/ProyectoFinalGAD/blob/master/metodos.py) debemos especificar la ruta de una imágen en la función "agregarImagen()", en nuestro caso es
 
 ```
-rutaImg = 'C:\Users\Fernando\Desktop\ProyectoFinalGAD-master\assets\images\train\Alexandrite\alexandrite_7.jpg'
+rutaImg = 'C:\Users\...\ProyectoFinalGAD-master\assets\images\train\Alexandrite\alexandrite_7.jpg'
 ```
 
 De esta forma ya tenemos la herramienta lista para correr.
@@ -69,7 +79,8 @@ De esta forma ya tenemos la herramienta lista para correr.
 * [Psycopg](https://pypi.org/project/psycopg2/) - Adaptador de base de datos PostgreSQL para Python.
 * [numpy](https://pypi.org/project/numpy/) - Librería para utilizar estructuras de datos y operaciones basadas en el álgebra lineal.
 * [tkinter](https://docs.python.org/3/library/tkinter.html) - Librería para diseño de GUI de Python.
-
+* [Skimage](https://scikit-image.org/) - Colección de algoritmos para procesado de imágenes. 
+* [matplotlib](https://matplotlib.org/) - Librería para crear visualizaciones estáticas, animadas e interactivas en Python.
 
 ## Autores ✒️
 
