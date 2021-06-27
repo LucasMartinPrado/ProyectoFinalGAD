@@ -25,9 +25,8 @@ Entonces, cada vez que se realiza una consulta, utilizamos la tabla FQA, un vect
 Para medir la eficiencia de la herramienta a la hora de correr el código, se decidió utilizar histogramas de colores.
 Los histogramas nos permite obtener los colores RGB para luego normalizarlos. Al hacer esto, nos habíamos encontrado con la particularidad de que los histogramas también estaban tomando los fondos de las imágenes de las piedras preciosas, por lo que se procedió a crear una función de "masking" que se le aplica a estas imágenes, detectando los bordes correspondientes para luego hacer que se ignore la parte enmascarada de la imágen. 
 Para hacer todo esto, utilizamos la librería Skimage. Al detectar los bordes, tuvimos que aplicar un valor "threshold" (de límite) dinámico usando método de Otsu. El valor límite se estableció como dinámico debido a unos factores a tener en cuenta:
-	- Los fondos, por lo general, no son iguales. Hay fondos blancos, negros y hasta incluso grises.
-	- Las gemas también tienen variedad de colores, si se coloca un threshold muy alto, se podría 
-      enmascarar partes de la gema.
+- Las gemas también tienen variedad de colores, si se coloca un threshold muy alto, se podría enmascarar partes de la gema.
+- Los fondos, por lo general, no son iguales. Hay fondos blancos, negros y hasta incluso grises.
 De esta forma, siendo dinámico, ya no tendríamos estos problemas. Finalmente obtuvimos resultados muy buenos respecto a la predicción.
 
 ### Pre-requisitos 📋
